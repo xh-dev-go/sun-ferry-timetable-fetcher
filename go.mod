@@ -1,5 +1,5 @@
-module hk-sun-ferry
+module github.com/xh-dev-go/sun-ferry-timetable-fetcher
 
 go 1.18
 
-require github.com/xh-dev-go/xhUtils v1.7.22 // indirect
+require github.com/xh-dev-go/xhUtils v1.7.22
