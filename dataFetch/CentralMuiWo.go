@@ -11,24 +11,40 @@ import (
 	"strings"
 )
 
-func Extract(URL string) string {
+func Extract(URL string, eTag string) (string, int, string) {
 	client := http.Client{}
-	response, err := client.Get(URL)
+	req, err := http.NewRequest("GET", URL, nil)
+	if err != nil {
+		panic(err)
+	}
+	if eTag != "" {
+		req.Header.Set("If-None-Match", eTag)
+	}
+	response, err := client.Do(req)
 	if err != nil {
 		panic(err)
 	}
 
-	msgByte, err := io.ReadAll(response.Body)
-	if err != nil {
-		panic(err)
-	}
+	if response.StatusCode == 200 {
+		msgByte, err := io.ReadAll(response.Body)
+		if err != nil {
+			panic(err)
+		}
 
-	msg := string(msgByte)
-	return msg
+		msg := string(msgByte)
+		return msg, 200, response.Header.Get("ETag")
+
+	} else if response.StatusCode == 304 {
+		return "", 304, ""
+
+	} else {
+		panic(errors.New(fmt.Sprintf("Status[%d] not support", response.StatusCode)))
+
+	}
 
 }
 
-func Decode(msg, routeName string, dict map[string]string) []FerryRecord {
+func Decode(msg, routeName string, dict map[string]string) *[]FerryRecord {
 	var records []FerryRecord
 	csvReader := csv.NewReader(strings.NewReader(msg))
 	csvReader.Read()
@@ -46,6 +62,7 @@ func Decode(msg, routeName string, dict map[string]string) []FerryRecord {
 		record.ZhTo = dict[record.To]
 
 		mtf := *binaryFlag.New().SetBit(1).SetBit(2).SetBit(3).SetBit(4).SetBit(5)
+		mts := *binaryFlag.New().SetBit(1).SetBit(2).SetBit(3).SetBit(4).SetBit(5).SetBit(6).SetBit(7)
 		sat := *binaryFlag.New().SetBit(6)
 		sunPub := *binaryFlag.New().SetBit(7).SetBit(10)
 		if line[1] == "Mondays to Fridays except public holidays" {
@@ -54,8 +71,10 @@ func Decode(msg, routeName string, dict map[string]string) []FerryRecord {
 			record.Frequency = *binaryFlag.New().SetBinary(sat)
 		} else if line[1] == "Sundays and public holidays" {
 			record.Frequency = *binaryFlag.New().SetBinary(sunPub)
+		} else if line[1] == "Mondays to Saturdays except public holidays" {
+			record.Frequency = *binaryFlag.New().SetBinary(mts)
 		} else {
-			panic(errors.New("sss"))
+			panic(errors.New(fmt.Sprintf("Line[%s] not support", line[1])))
 		}
 		times := strings.Split(strings.TrimSpace(line[2]), " ")
 		time, err := strconv.Atoi(strings.ReplaceAll(times[0], ":", ""))
@@ -83,5 +102,5 @@ func Decode(msg, routeName string, dict map[string]string) []FerryRecord {
 		fmt.Println(fmt.Sprintf("%+v", record))
 
 	}
-	return records
+	return &records
 }
