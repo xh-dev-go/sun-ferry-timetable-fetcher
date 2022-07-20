@@ -11,6 +11,12 @@ import (
 	"strings"
 )
 
+type Convert struct {
+	ToSpeed     func(string, string) binaryFlag.BinaryFlag
+	ToFrequency func(string, string) binaryFlag.BinaryFlag
+	ToRemark    func(string, string) binaryFlag.BinaryFlag
+}
+
 func Extract(URL string, eTag string) (string, int, string) {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", URL, nil)
@@ -44,7 +50,7 @@ func Extract(URL string, eTag string) (string, int, string) {
 
 }
 
-func Decode(msg, routeName string, dict map[string]string) *[]FerryRecord {
+func Decode(msg, routeName string, dict map[string]string, convert Convert) *[]FerryRecord {
 	var records []FerryRecord
 	csvReader := csv.NewReader(strings.NewReader(msg))
 	csvReader.Read()
@@ -61,21 +67,6 @@ func Decode(msg, routeName string, dict map[string]string) *[]FerryRecord {
 		record.To = strings.TrimSpace(locationArr[1])
 		record.ZhTo = dict[record.To]
 
-		mtf := *binaryFlag.New().SetBit(1).SetBit(2).SetBit(3).SetBit(4).SetBit(5)
-		mts := *binaryFlag.New().SetBit(1).SetBit(2).SetBit(3).SetBit(4).SetBit(5).SetBit(6).SetBit(7)
-		sat := *binaryFlag.New().SetBit(6)
-		sunPub := *binaryFlag.New().SetBit(7).SetBit(10)
-		if line[1] == "Mondays to Fridays except public holidays" {
-			record.Frequency = *binaryFlag.New().SetBinary(mtf)
-		} else if line[1] == "Saturdays except public holidays" {
-			record.Frequency = *binaryFlag.New().SetBinary(sat)
-		} else if line[1] == "Sundays and public holidays" {
-			record.Frequency = *binaryFlag.New().SetBinary(sunPub)
-		} else if line[1] == "Mondays to Saturdays except public holidays" {
-			record.Frequency = *binaryFlag.New().SetBinary(mts)
-		} else {
-			panic(errors.New(fmt.Sprintf("Line[%s] not support", line[1])))
-		}
 		times := strings.Split(strings.TrimSpace(line[2]), " ")
 		time, err := strconv.Atoi(strings.ReplaceAll(times[0], ":", ""))
 		if err != nil {
@@ -87,16 +78,10 @@ func Decode(msg, routeName string, dict map[string]string) *[]FerryRecord {
 		record.Time = time
 
 		remark := line[3]
-		if remark == "" {
-			record.Speed = *binaryFlag.New().SetBit(SpeedFast)
-			record.Remark = *binaryFlag.New()
-		} else if remark == "1" {
-			record.Speed = *binaryFlag.New().SetBit(SpeedOrdinary)
-			record.Remark = *binaryFlag.New()
-		} else if remark == "2" {
-			record.Speed = *binaryFlag.New().SetBit(SpeedOrdinary)
-			record.Remark = *binaryFlag.New().SetBit(ViaPengChau)
-		}
+		serviceDate := line[1]
+		record.Frequency = convert.ToFrequency(serviceDate, remark)
+		record.Speed = convert.ToSpeed(serviceDate, remark)
+		record.Remark = convert.ToRemark(serviceDate, remark)
 
 		records = append(records, record)
 		fmt.Println(fmt.Sprintf("%+v", record))
