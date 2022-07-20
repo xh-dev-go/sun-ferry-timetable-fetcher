@@ -20,5 +20,8 @@ const (
 )
 
 const (
-	ViaPengChau int = 1
+	ViaPengChau         int = iota
+	TerminatePengChau       = iota
+	TerminateMuiWo          = iota
+	TerminateCheungChau     = iota
 )

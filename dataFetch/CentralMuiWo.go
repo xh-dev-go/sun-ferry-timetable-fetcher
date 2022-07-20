@@ -50,6 +50,49 @@ func Extract(URL string, eTag string) (string, int, string) {
 
 }
 
+func DecodeIsland(msg, routeName string, dict map[string]string, convert Convert) *[]FerryRecord {
+	var records []FerryRecord
+	csvReader := csv.NewReader(strings.NewReader(msg))
+	csvReader.Read()
+	lines, err := csvReader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+	for _, line := range lines {
+		record := FerryRecord{}
+		record.Route = routeName
+		direction := strings.Split(line[0], "to")
+		record.From = strings.TrimSpace(direction[0])
+
+		// TODO Bug
+		record.From = strings.ReplaceAll(record.From, "Chueung", "Cheung")
+		record.To = strings.TrimSpace(direction[1])
+
+		record.ZhFrom = dict[record.From]
+		record.ZhTo = dict[record.To]
+
+		times := strings.Split(strings.TrimSpace(line[2]), " ")
+		time, err := strconv.Atoi(strings.ReplaceAll(times[0], ":", ""))
+		if err != nil {
+			panic(errors.New("fail convert time to number"))
+		}
+		if times[1] == "p.m." {
+			time += 1200
+		}
+		record.Time = time
+
+		remark := line[3]
+		serviceDate := line[1]
+		record.Frequency = convert.ToFrequency(serviceDate, remark)
+		record.Speed = convert.ToSpeed(serviceDate, remark)
+		record.Remark = convert.ToRemark(serviceDate, remark)
+
+		records = append(records, record)
+		fmt.Println(fmt.Sprintf("%+v", record))
+
+	}
+	return &records
+}
 func Decode(msg, routeName string, dict map[string]string, convert Convert) *[]FerryRecord {
 	var records []FerryRecord
 	csvReader := csv.NewReader(strings.NewReader(msg))

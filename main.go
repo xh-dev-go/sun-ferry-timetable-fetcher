@@ -12,11 +12,20 @@ func main() {
 			"sss": "ssss",
 		})
 	})
-	r.GET("/mui-wo", func(c *gin.Context) {
+	r.GET("/ferry/sun-ferry/mui-wo", func(c *gin.Context) {
 		c.JSON(200, service.GetCentralToMuiWo())
 	})
-	r.GET("/cheung-chau", func(c *gin.Context) {
+	r.GET("/ferry/sun-ferry/cheung-chau", func(c *gin.Context) {
 		c.JSON(200, service.GetCentralToCheungChau())
+	})
+	r.GET("/ferry/sun-ferry/inter-island", func(c *gin.Context) {
+		c.JSON(200, service.GetInterIsland())
+	})
+	r.GET("/ferry/sun-ferry/hung-hom-north-point", func(c *gin.Context) {
+		c.JSON(200, service.GetNorthPointHungHome())
+	})
+	r.GET("/ferry/sun-ferry/north-point-kowloon-city", func(c *gin.Context) {
+		c.JSON(200, service.GetNorthPointKowloonCity())
 	})
 	r.Run()
 }
