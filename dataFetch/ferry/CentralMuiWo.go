@@ -1,9 +1,10 @@
-package dataFetch
+package ferry
 
 import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch"
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 	"io"
 	"net/http"
@@ -50,8 +51,8 @@ func Extract(URL string, eTag string) (string, int, string) {
 
 }
 
-func DecodeIsland(msg, routeName string, dict map[string]string, convert Convert) *[]FerryRecord {
-	var records []FerryRecord
+func DecodeIsland(msg, routeName string, dict map[string]string, convert Convert) *[]dataFetch.FerryRecord {
+	var records []dataFetch.FerryRecord
 	csvReader := csv.NewReader(strings.NewReader(msg))
 	csvReader.Read()
 	lines, err := csvReader.ReadAll()
@@ -59,7 +60,7 @@ func DecodeIsland(msg, routeName string, dict map[string]string, convert Convert
 		panic(err)
 	}
 	for _, line := range lines {
-		record := FerryRecord{}
+		record := dataFetch.FerryRecord{}
 		record.Route = routeName
 		direction := strings.Split(line[0], "to")
 		record.From = strings.TrimSpace(direction[0])
@@ -93,8 +94,8 @@ func DecodeIsland(msg, routeName string, dict map[string]string, convert Convert
 	}
 	return &records
 }
-func Decode(msg, routeName string, dict map[string]string, convert Convert) *[]FerryRecord {
-	var records []FerryRecord
+func Decode(msg, routeName string, dict map[string]string, convert Convert) *[]dataFetch.FerryRecord {
+	var records []dataFetch.FerryRecord
 	csvReader := csv.NewReader(strings.NewReader(msg))
 	csvReader.Read()
 	lines, err := csvReader.ReadAll()
@@ -102,7 +103,7 @@ func Decode(msg, routeName string, dict map[string]string, convert Convert) *[]F
 		panic(err)
 	}
 	for _, line := range lines {
-		record := FerryRecord{}
+		record := dataFetch.FerryRecord{}
 		record.Route = routeName
 		locationArr := strings.Split(line[0], "to")
 		record.From = strings.TrimSpace(locationArr[0])

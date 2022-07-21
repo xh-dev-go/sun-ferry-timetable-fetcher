@@ -2,10 +2,12 @@ package service
 
 import (
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch"
+	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/ferry"
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
-var hungHomNorthPointFerry = ETagCache{
+var hungHomNorthPointFerryETag = ETagCache{}
+var hungHomNorthPointFerry = SunFerryConfig{
 	DecodeMode: DecodeMode2,
 	routeName:  "hung home - north point ferry",
 	url:        "https://www.sunferry.com.hk/eta/timetable/SunFerry_northpoint_hunghom_timetable_eng.csv",
@@ -36,7 +38,7 @@ var hungHomNorthPointFerry = ETagCache{
 		Values: map[int]string{},
 	},
 }
-var homeHomNorthPointConvert = dataFetch.Convert{
+var homeHomNorthPointConvert = ferry.Convert{
 	ToSpeed: func(serviceDate string, remark string) binaryFlag.BinaryFlag {
 		return *binaryFlag.New().SetBit(dataFetch.SpeedOrdinary)
 	},

@@ -3,10 +3,12 @@ package service
 import (
 	"fmt"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch"
+	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/ferry"
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
-var centralMuiWoCache = ETagCache{
+var centralMuiWoCacheETag = ETagCache{}
+var centralMuiWoCache = SunFerryConfig{
 	DecodeMode: DecodeMode1,
 	routeName:  "Central - Mui Wo",
 	url:        "https://www.sunferry.com.hk/eta/timetable/SunFerry_central_muiwo_timetable_eng.csv",
@@ -44,7 +46,7 @@ var centralMuiWoCache = ETagCache{
 	},
 }
 
-var muiwoConvert = dataFetch.Convert{
+var muiwoConvert = ferry.Convert{
 	ToSpeed: func(serviceDate string, remark string) binaryFlag.BinaryFlag {
 		if remark == "1" || remark == "2" {
 			return *binaryFlag.New().SetBit(dataFetch.SpeedOrdinary)

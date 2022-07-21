@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch"
+	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/ferry"
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
@@ -26,8 +27,11 @@ type FerryRecordDto struct {
 }
 
 type ETagCache struct {
-	Value          *[]FerryRecordDto
-	ETag           string ""
+	Value *[]FerryRecordDto
+	ETag  string ""
+}
+
+type SunFerryConfig struct {
 	dict           map[string]string
 	url            string
 	routeName      string
@@ -38,20 +42,20 @@ type ETagCache struct {
 	DecodeMode     string
 }
 
-func GetNorthPointKowloonCity() []FerryRecordDto {
-	return get(&northPointKowloonCityFerry, northPointKowloonCityConvert)
+func GetNorthPointKowloonCity() ([]FerryRecordDto, string, int) {
+	return get(&northPointKowloonCityFerry, northPointKowloonCityConvert, northPointKowloonCityFerryETag)
 }
-func GetNorthPointHungHome() []FerryRecordDto {
-	return get(&hungHomNorthPointFerry, homeHomNorthPointConvert)
+func GetNorthPointHungHom() ([]FerryRecordDto, string, int) {
+	return get(&hungHomNorthPointFerry, homeHomNorthPointConvert, hungHomNorthPointFerryETag)
 }
-func GetInterIsland() []FerryRecordDto {
-	return get(&interIslandFerry, interIslandConvert)
+func GetInterIsland() ([]FerryRecordDto, string, int) {
+	return get(&interIslandFerry, interIslandConvert, interIslandFerryETag)
 }
-func GetCentralToCheungChau() []FerryRecordDto {
-	return get(&centralCheungChauCache, cheungChauConvert)
+func GetCentralToCheungChau() ([]FerryRecordDto, string, int) {
+	return get(&centralCheungChauCache, cheungChauConvert, centralCheungChauCacheETag)
 }
-func GetCentralToMuiWo() []FerryRecordDto {
-	return get(&centralMuiWoCache, muiwoConvert)
+func GetCentralToMuiWo() ([]FerryRecordDto, string, int) {
+	return get(&centralMuiWoCache, muiwoConvert, centralMuiWoCacheETag)
 }
 
 func convertToDto(
@@ -88,32 +92,32 @@ func convertToDto(
 	return &list
 }
 
-func get(cache *ETagCache, convert dataFetch.Convert) []FerryRecordDto {
-	str, status, eTagValue := dataFetch.Extract(cache.url, cache.ETag)
+func get(cache *SunFerryConfig, convert ferry.Convert, tagCache ETagCache) ([]FerryRecordDto, string, int) {
+	str, status, eTagValue := ferry.Extract(cache.url, tagCache.ETag)
 
 	if status == 200 {
 		fmt.Println("Load new records")
-		cache.ETag = eTagValue
+		tagCache.ETag = eTagValue
 
 		if cache.DecodeMode == DecodeMode1 {
-			cache.Value = convertToDto(*dataFetch.Decode(str, cache.routeName, cache.dict, convert),
+			tagCache.Value = convertToDto(*ferry.Decode(str, cache.routeName, cache.dict, convert),
 				cache.speedSetup,
 				cache.frequencySetup,
 				cache.remarkSetup,
 				cache.zhRemarkSetup,
 			)
 		} else if cache.DecodeMode == DecodeMode2 {
-			cache.Value = convertToDto(*dataFetch.DecodeIsland(str, cache.routeName, cache.dict, convert),
+			tagCache.Value = convertToDto(*ferry.DecodeIsland(str, cache.routeName, cache.dict, convert),
 				cache.speedSetup,
 				cache.frequencySetup,
 				cache.remarkSetup,
 				cache.zhRemarkSetup,
 			)
 		}
-		return *cache.Value
+		return *tagCache.Value, tagCache.ETag, 200
 	} else if status == 304 {
 		fmt.Println(fmt.Sprintf("[%s]Load records from cache", cache.routeName))
-		return *cache.Value
+		return nil, tagCache.ETag, 304
 	} else {
 		panic(errors.New("should not occurred"))
 	}

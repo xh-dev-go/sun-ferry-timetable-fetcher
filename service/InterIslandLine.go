@@ -2,10 +2,12 @@ package service
 
 import (
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch"
+	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/ferry"
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
-var interIslandFerry = ETagCache{
+var interIslandFerryETag = ETagCache{}
+var interIslandFerry = SunFerryConfig{
 	DecodeMode: DecodeMode2,
 	routeName:  "inter island ferry",
 	url:        "https://www.sunferry.com.hk/eta/timetable/SunFerry_interislands_timetable_eng.csv",
@@ -46,7 +48,7 @@ var interIslandFerry = ETagCache{
 		},
 	},
 }
-var interIslandConvert = dataFetch.Convert{
+var interIslandConvert = ferry.Convert{
 	ToSpeed: func(serviceDate string, remark string) binaryFlag.BinaryFlag {
 		return *binaryFlag.New().SetBit(dataFetch.SpeedOrdinary)
 	},

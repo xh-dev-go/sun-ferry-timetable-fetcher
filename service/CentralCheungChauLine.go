@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch"
+	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/ferry"
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
-var centralCheungChauCache = ETagCache{
+var centralCheungChauCacheETag = ETagCache{}
+var centralCheungChauCache = SunFerryConfig{
 	DecodeMode: DecodeMode1,
 	routeName:  "Central - Cheung Chau",
 	url:        "https://www.sunferry.com.hk/eta/timetable/SunFerry_central_cheungchau_timetable_eng.csv",
@@ -41,7 +43,7 @@ var centralCheungChauCache = ETagCache{
 	},
 }
 
-var cheungChauConvert = dataFetch.Convert{
+var cheungChauConvert = ferry.Convert{
 	ToSpeed: func(serviceDate string, remark string) binaryFlag.BinaryFlag {
 		if remark == "1" || remark == "3" || remark == "4" {
 			return *binaryFlag.New().SetBit(dataFetch.SpeedOrdinary)
