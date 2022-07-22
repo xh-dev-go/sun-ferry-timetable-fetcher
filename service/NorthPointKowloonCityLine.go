@@ -6,7 +6,7 @@ import (
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
-var northPointKowloonCityFerryETag = ETagCache{}
+var northPointKowloonCityFerryETag = ETagCache[FerryRecordDto]{}
 var northPointKowloonCityFerry = SunFerryConfig{
 	DecodeMode: DecodeMode2,
 	routeName:  "north point - kowloon city ferry",

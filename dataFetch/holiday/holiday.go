@@ -3,7 +3,8 @@ package holiday
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/cachedResult"
+	cachedResult2 "github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/cachedResult/cachedResult"
 	"io"
 	"net/http"
 	"strings"
@@ -16,35 +17,38 @@ type Holiday struct {
 	Name string
 }
 
-func ExtractJson(URL string, eTag string) (string, int, string) {
+func ExtractJson(URL string) cachedResult2.CacheResult[string] {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", URL, nil)
 	if err != nil {
 		panic(err)
 	}
-	if eTag != "" {
-		req.Header.Set("If-None-Match", eTag)
-	}
-	response, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
 
-	if response.StatusCode == 200 {
-		msgByte, err := io.ReadAll(response.Body)
-		if err != nil {
-			panic(err)
-		}
+	return HolidayETag2.Intercept(req, &client)
 
-		msg := string(msgByte)
-		return msg, 200, response.Header.Get("ETag")
+	//if eTag != "" {
+	//	req.Header.Set("If-None-Match", eTag)
+	//}
+	//response, err := client.Do(req)
+	//if err != nil {
+	//	panic(err)
+	//}
 
-	} else if response.StatusCode == 304 {
-		return "", 304, ""
-
-	} else {
-		panic(errors.New(fmt.Sprintf("Status[%d] not support", response.StatusCode)))
-	}
+	//if response.StatusCode == 200 {
+	//	msgByte, err := io.ReadAll(response.Body)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	msg := string(msgByte)
+	//	return msg, 200, response.Header.Get("ETag")
+	//
+	//} else if response.StatusCode == 304 {
+	//	return "", 304, ""
+	//
+	//} else {
+	//	panic(errors.New(fmt.Sprintf("Status[%d] not support", response.StatusCode)))
+	//}
 
 }
 
@@ -69,6 +73,32 @@ type VEvent struct {
 	Summary string         `json:"summary"`
 }
 
+//var HolidayETag = service.ETagCache[Holiday]{}
+
+var HolidayETag2 = cachedResult.SingleHttpCache[string]{
+
+	Cast: func(response http.Response) (string, error) {
+		msgByte, err := io.ReadAll(response.Body)
+		if err != nil {
+			return "", err
+		}
+
+		msg := string(msgByte)
+		return msg, nil
+	},
+}
+
+func GetHolidays() (*[]Holiday, string, int) {
+	result := ExtractJson("https://www.1823.gov.hk/common/ical/en.json")
+	if result.HasError() {
+		panic(result.Error)
+	}
+
+	data := result.Value
+
+	holidays := DecodeHoliday(data)
+	return holidays
+}
 func DecodeHoliday(msg string) *[]Holiday {
 	data := strings.TrimPrefix(msg, "\xef\xbb\xbf")
 	var cal = Calendar{}

@@ -8,7 +8,7 @@ import (
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
-var centralCheungChauCacheETag = ETagCache{}
+var centralCheungChauCacheETag = ETagCache[FerryRecordDto]{}
 var centralCheungChauCache = SunFerryConfig{
 	DecodeMode: DecodeMode1,
 	routeName:  "Central - Cheung Chau",

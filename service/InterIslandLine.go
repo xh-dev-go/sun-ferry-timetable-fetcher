@@ -6,7 +6,7 @@ import (
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
-var interIslandFerryETag = ETagCache{}
+var interIslandFerryETag = ETagCache[FerryRecordDto]{}
 var interIslandFerry = SunFerryConfig{
 	DecodeMode: DecodeMode2,
 	routeName:  "inter island ferry",

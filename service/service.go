@@ -26,8 +26,8 @@ type FerryRecordDto struct {
 	ZhRemark  []string
 }
 
-type ETagCache struct {
-	Value *[]FerryRecordDto
+type ETagCache[T any] struct {
+	Value *[]T
 	ETag  string ""
 }
 
@@ -92,7 +92,7 @@ func convertToDto(
 	return &list
 }
 
-func get(cache *SunFerryConfig, convert ferry.Convert, tagCache ETagCache) ([]FerryRecordDto, string, int) {
+func get(cache *SunFerryConfig, convert ferry.Convert, tagCache ETagCache[FerryRecordDto]) ([]FerryRecordDto, string, int) {
 	str, status, eTagValue := ferry.Extract(cache.url, tagCache.ETag)
 
 	if status == 200 {

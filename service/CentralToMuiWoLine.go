@@ -7,7 +7,7 @@ import (
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
-var centralMuiWoCacheETag = ETagCache{}
+var centralMuiWoCacheETag = ETagCache[FerryRecordDto]{}
 var centralMuiWoCache = SunFerryConfig{
 	DecodeMode: DecodeMode1,
 	routeName:  "Central - Mui Wo",
