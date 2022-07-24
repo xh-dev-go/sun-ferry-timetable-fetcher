@@ -25,31 +25,6 @@ func ExtractJson(URL string) cachedResult2.CacheResult[string] {
 	}
 
 	return HolidayETag2.Intercept(req, &client)
-
-	//if eTag != "" {
-	//	req.Header.Set("If-None-Match", eTag)
-	//}
-	//response, err := client.Do(req)
-	//if err != nil {
-	//	panic(err)
-	//}
-
-	//if response.StatusCode == 200 {
-	//	msgByte, err := io.ReadAll(response.Body)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//
-	//	msg := string(msgByte)
-	//	return msg, 200, response.Header.Get("ETag")
-	//
-	//} else if response.StatusCode == 304 {
-	//	return "", 304, ""
-	//
-	//} else {
-	//	panic(errors.New(fmt.Sprintf("Status[%d] not support", response.StatusCode)))
-	//}
-
 }
 
 type Calendar struct {
@@ -75,7 +50,7 @@ type VEvent struct {
 
 //var HolidayETag = service.ETagCache[Holiday]{}
 
-var HolidayETag2 = cachedResult.SingleHttpCache[string]{
+var HolidayETag2 = cachedResult.SimpleHttpCache[string]{
 
 	Cast: func(response http.Response) (string, error) {
 		msgByte, err := io.ReadAll(response.Body)
@@ -88,16 +63,16 @@ var HolidayETag2 = cachedResult.SingleHttpCache[string]{
 	},
 }
 
-func GetHolidays() (*[]Holiday, string, int) {
+var hCached = cachedResult2.CacheResult[[]Holiday]{}
+
+func GetHolidays() cachedResult2.CacheResult[[]Holiday] {
 	result := ExtractJson("https://www.1823.gov.hk/common/ical/en.json")
 	if result.HasError() {
 		panic(result.Error)
 	}
 
-	data := result.Value
-
-	holidays := DecodeHoliday(data)
-	return holidays
+	holidays := DecodeHoliday(result.Value)
+	return cachedResult2.Cached[[]Holiday](*holidays, result.ETag)
 }
 func DecodeHoliday(msg string) *[]Holiday {
 	data := strings.TrimPrefix(msg, "\xef\xbb\xbf")

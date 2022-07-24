@@ -52,13 +52,15 @@ func main() {
 	calendarGroup := r.Group("/api/v1/calendar")
 	{
 		calendarGroup.GET("", func(c *gin.Context) {
-			holidays, eTag, status := holiday.GetHolidays()
+			result := holiday.GetHolidays()
 			c.Header("Access-Control-Expose-Headers", "ETag")
-			c.Header("ETag", eTag)
-			if status == 200 {
-				c.JSON(status, holidays)
+			if result.HasError() {
+				c.Status(result.Response.StatusCode)
+			} else if result.Cached {
+				c.Header("ETag", result.ETag)
+				c.JSON(200, result.Value)
 			} else {
-				c.Status(status)
+				c.Status(result.Response.StatusCode)
 			}
 		})
 		calendarGroup.GET("/check/today", func(c *gin.Context) {
@@ -71,7 +73,7 @@ func main() {
 				return
 			}
 
-			holidays, _, _ := holiday.GetHolidays()
+			holidaysResult := holiday.GetHolidays()
 
 			var setResponse = func(status bool, todayString string, context *gin.Context) {
 				data := IsPublicHolidayDto{
@@ -95,7 +97,7 @@ func main() {
 
 			layout := "20060102"
 			todayString := time.Now().Format(layout)
-			for _, item := range holidays {
+			for _, item := range holidaysResult.Value {
 				if item.Date == todayString {
 					setResponse(true, todayString, c)
 					return

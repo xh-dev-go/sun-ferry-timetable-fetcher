@@ -2,19 +2,13 @@ package cachedResult
 
 import "net/http"
 
+type ETag = string
 type CacheResult[T any] struct {
+	ETag     string
 	Cached   bool
 	Value    T
 	Response *http.Response
 	Error    error
-}
-
-func (CacheResult *CacheResult[T]) mapTo(mapping func(t T) U) *CacheResult[U] {
-	if CacheResult.HasError() {
-		return CacheResult
-	}
-	rs := mapping(CacheResult.Value)
-
 }
 
 func (CacheResult *CacheResult[T]) HasError() bool {
@@ -25,14 +19,15 @@ func (CacheResult *CacheResult[T]) HasError() bool {
 	}
 }
 
-func Cached[T](t T) CacheResult[T] {
+func Cached[T any](t T, etag string) CacheResult[T] {
 	return CacheResult[T]{
+		ETag:   etag,
 		Value:  t,
 		Cached: true,
 	}
 }
 
-func NotCached[T](response *http.Response) CacheResult[T] {
+func NotCached[T any](response *http.Response) CacheResult[T] {
 	return CacheResult[T]{
 		Response: response,
 		Cached:   true,
