@@ -12,6 +12,7 @@ import (
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/holiday"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/service"
 	"mime"
+	"regexp"
 	"time"
 )
 
@@ -49,61 +50,91 @@ func main() {
 		AllowAllOrigins: true,
 	}))
 	r.Use(static.Serve("/", static.LocalFile("./static", true)))
-	calendarGroup := r.Group("/api/v1/calendar")
+	calendarGroup := r.Group("/api/v1/calendar/public-holiday")
 	{
+		layout := "20060102"
+		var setResponse = func(status bool, todayString string, context *gin.Context) {
+			data := IsPublicHolidayDto{
+				IsPublicHoliday: status,
+				Summary:         "",
+			}
+			dBytes, err := json.Marshal(data)
+			if err != nil {
+				panic(err)
+			}
+			var arr []IsPublicHolidayDto
+			arr = append(arr, data)
+			md5Hash := md5.Sum(dBytes)
+
+			todayETag.Value = &arr
+			todayETag.ETag = todayString + ":" + hex.EncodeToString(md5Hash[:])
+
+			context.Header("ETag", todayETag.ETag)
+			context.JSON(200, data)
+		}
 		calendarGroup.GET("", func(c *gin.Context) {
 			result := holiday.GetHolidays()
 			c.Header("Access-Control-Expose-Headers", "ETag")
 			if result.HasError() {
-				c.Status(result.Response.StatusCode)
-			} else if result.Cached {
-				c.Header("ETag", result.ETag)
-				c.JSON(200, result.Value)
+				c.Status(result.Response().StatusCode)
+			} else if result.IsResultCached() {
+				c.Header("ETag", result.Cache().Key())
+				c.JSON(200, result.Cache().Value())
 			} else {
-				c.Status(result.Response.StatusCode)
+				c.Status(result.Response().StatusCode)
 			}
 		})
-		calendarGroup.GET("/check/today", func(c *gin.Context) {
+		calendarGroup.GET("/date/:dateStr", func(c *gin.Context) {
+			dateStr := c.Param("dateStr")
+			if dateStr == "" {
+				c.Status(400)
+				return
+			}
+			matching, err := regexp.MatchString("^[0-9]{8}$", dateStr)
+
+			if err != nil || !matching {
+				c.Status(400)
+				return
+			}
+
+			layout := "20060102"
+			date, err := time.Parse(layout, dateStr)
+			if err != nil || !matching {
+				c.Status(400)
+				return
+			}
+			todayString := date.Format(layout)
 			c.Header("Access-Control-Expose-Headers", "ETag")
 			etagRequest := c.Request.Header.Get("If-None-Match")
-			if etagRequest != "" && etagRequest == todayETag.ETag {
+			if etagRequest != "" && todayString+":"+etagRequest == todayETag.ETag {
 				data := *todayETag.Value
 				c.Header("ETag", etagRequest)
 				c.JSON(304, data[0])
 				return
 			}
 
-			holidaysResult := holiday.GetHolidays()
-
-			var setResponse = func(status bool, todayString string, context *gin.Context) {
-				data := IsPublicHolidayDto{
-					IsPublicHoliday: status,
-					Summary:         "",
-				}
-				dBytes, err := json.Marshal(data)
-				if err != nil {
-					panic(err)
-				}
-				var arr []IsPublicHolidayDto
-				arr = append(arr, data)
-				md5Hash := md5.Sum(dBytes)
-
-				todayETag.Value = &arr
-				todayETag.ETag = hex.EncodeToString(md5Hash[:])
-
-				context.Header("ETag", todayETag.ETag)
-				context.JSON(200, data)
+			if holiday.IsPublicHoliday(todayString) == nil {
+				setResponse(false, todayString, c)
+			} else {
+				setResponse(true, todayString, c)
 			}
-
-			layout := "20060102"
+		})
+		calendarGroup.GET("/today", func(c *gin.Context) {
 			todayString := time.Now().Format(layout)
-			for _, item := range holidaysResult.Value {
-				if item.Date == todayString {
-					setResponse(true, todayString, c)
-					return
-				}
+			c.Header("Access-Control-Expose-Headers", "ETag")
+			etagRequest := c.Request.Header.Get("If-None-Match")
+			if etagRequest != "" && todayString+":"+etagRequest == todayETag.ETag {
+				data := *todayETag.Value
+				c.Header("ETag", etagRequest)
+				c.JSON(304, data[0])
+				return
 			}
-			setResponse(false, todayString, c)
+
+			if holiday.IsPublicHoliday(todayString) == nil {
+				setResponse(false, todayString, c)
+			} else {
+				setResponse(true, todayString, c)
+			}
 		})
 	}
 	sunFerryGroup := r.Group("/api/v1/ferry/sun-ferry")

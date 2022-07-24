@@ -3,8 +3,8 @@ package holiday
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/cachedResult"
-	cachedResult2 "github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/cachedResult/cachedResult"
 	"io"
 	"net/http"
 	"strings"
@@ -15,16 +15,6 @@ type Holiday struct {
 	Uid  string
 	Date string
 	Name string
-}
-
-func ExtractJson(URL string) cachedResult2.CacheResult[string] {
-	client := http.Client{}
-	req, err := http.NewRequest("GET", URL, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	return HolidayETag2.Intercept(req, &client)
 }
 
 type Calendar struct {
@@ -48,31 +38,53 @@ type VEvent struct {
 	Summary string         `json:"summary"`
 }
 
-//var HolidayETag = service.ETagCache[Holiday]{}
+var CachedHolidayApi = cachedResult.Cache[[]Holiday]{}
 
-var HolidayETag2 = cachedResult.SimpleHttpCache[string]{
-
-	Cast: func(response http.Response) (string, error) {
-		msgByte, err := io.ReadAll(response.Body)
-		if err != nil {
-			return "", err
+func IsPublicHoliday(dateString string) *Holiday {
+	layout := "20060102"
+	date, err := time.Parse(layout, dateString)
+	if err != nil {
+		panic(err)
+	}
+	if date.Weekday() == time.Sunday {
+		return &Holiday{
+			Uid:  "",
+			Date: dateString,
+			Name: "Sunday",
 		}
 
-		msg := string(msgByte)
-		return msg, nil
-	},
-}
-
-var hCached = cachedResult2.CacheResult[[]Holiday]{}
-
-func GetHolidays() cachedResult2.CacheResult[[]Holiday] {
-	result := ExtractJson("https://www.1823.gov.hk/common/ical/en.json")
-	if result.HasError() {
-		panic(result.Error)
 	}
 
-	holidays := DecodeHoliday(result.Value)
-	return cachedResult2.Cached[[]Holiday](*holidays, result.ETag)
+	holidaysResult := GetHolidays()
+	if holidaysResult.HasError() {
+		panic(holidaysResult.Error())
+	} else if !holidaysResult.IsResultCached() {
+		panic(fmt.Sprintf("Not expected result [%s]", holidaysResult.Response().Status))
+	}
+	for _, item := range holidaysResult.Cache().Value() {
+		if item.Date == dateString {
+			return &item
+		}
+	}
+	return nil
+}
+
+func GetHolidays() cachedResult.CacheResult[[]Holiday] {
+	url := "https://www.1823.gov.hk/common/ical/en.json"
+	client := http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		panic(err)
+	}
+	return CachedHolidayApi.HttpCaching(req, &client, func(response http.Response) ([]Holiday, error) {
+		bytes, err := io.ReadAll(response.Body)
+		if err != nil {
+			return nil, err
+		} else {
+			return *DecodeHoliday(string(bytes)), nil
+		}
+	})
+
 }
 func DecodeHoliday(msg string) *[]Holiday {
 	data := strings.TrimPrefix(msg, "\xef\xbb\xbf")
