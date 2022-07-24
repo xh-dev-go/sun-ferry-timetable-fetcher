@@ -17,6 +17,10 @@ func (cache *Cache[T]) Key() CacheKey {
 	return cache.key
 }
 
+func (cache *Cache[T]) Match(key string) bool {
+	return cache.HavingCache() && cache.Key() == key
+}
+
 func (cache *Cache[T]) Update(key CacheKey, value T) *Cache[T] {
 	cache.key = key
 	cache.value = value

@@ -2,11 +2,12 @@ package service
 
 import (
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch"
+	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/cachedResult"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/ferry"
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
-var northPointKowloonCityFerryETag = ETagCache[FerryRecordDto]{}
+var northPointKowloonCityFerryETag = cachedResult.Cache[[]FerryRecordDto]{}
 var northPointKowloonCityFerry = SunFerryConfig{
 	DecodeMode: DecodeMode2,
 	routeName:  "north point - kowloon city ferry",

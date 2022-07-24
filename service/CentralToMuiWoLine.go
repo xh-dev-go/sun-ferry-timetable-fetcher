@@ -3,11 +3,12 @@ package service
 import (
 	"fmt"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch"
+	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/cachedResult"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/ferry"
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
-var centralMuiWoCacheETag = ETagCache[FerryRecordDto]{}
+var centralMuiWoCacheETag = cachedResult.Cache[[]FerryRecordDto]{}
 var centralMuiWoCache = SunFerryConfig{
 	DecodeMode: DecodeMode1,
 	routeName:  "Central - Mui Wo",

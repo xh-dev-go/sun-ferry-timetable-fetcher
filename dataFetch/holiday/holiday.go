@@ -40,19 +40,19 @@ type VEvent struct {
 
 var CachedHolidayApi = cachedResult.Cache[[]Holiday]{}
 
-func IsPublicHoliday(dateString string) *Holiday {
+func IsPublicHoliday(dateString string) []Holiday {
+	var arr []Holiday
 	layout := "20060102"
 	date, err := time.Parse(layout, dateString)
 	if err != nil {
 		panic(err)
 	}
 	if date.Weekday() == time.Sunday {
-		return &Holiday{
+		arr = append(arr, Holiday{
 			Uid:  "",
 			Date: dateString,
-			Name: "Sunday",
-		}
-
+			Name: time.Sunday.String(),
+		})
 	}
 
 	holidaysResult := GetHolidays()
@@ -63,10 +63,10 @@ func IsPublicHoliday(dateString string) *Holiday {
 	}
 	for _, item := range holidaysResult.Cache().Value() {
 		if item.Date == dateString {
-			return &item
+			arr = append(arr, item)
 		}
 	}
-	return nil
+	return arr
 }
 
 func GetHolidays() cachedResult.CacheResult[[]Holiday] {

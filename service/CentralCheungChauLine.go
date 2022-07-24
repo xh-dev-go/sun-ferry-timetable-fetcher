@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch"
+	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/cachedResult"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/ferry"
 	"github.com/xh-dev-go/xhUtils/binaryFlag"
 )
 
-var centralCheungChauCacheETag = ETagCache[FerryRecordDto]{}
+var centralCheungChauCacheETag = cachedResult.Cache[[]FerryRecordDto]{}
 var centralCheungChauCache = SunFerryConfig{
 	DecodeMode: DecodeMode1,
 	routeName:  "Central - Cheung Chau",
