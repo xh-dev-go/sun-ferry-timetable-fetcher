@@ -28,6 +28,38 @@ type FerryRecordDto struct {
 	ZhRemark  []string
 }
 
+func (ferryDto *FerryRecordDto) GetFlag() *binaryFlag.BinaryFlag {
+	bFlag := binaryFlag.New()
+	for _, s := range ferryDto.Frequency {
+		if s == "Monday" {
+			bFlag.SetBit(1)
+		}
+		if s == "Tuesday" {
+			bFlag.SetBit(2)
+		}
+		if s == "Wednesday" {
+			bFlag.SetBit(3)
+		}
+		if s == "Thusday" {
+			bFlag.SetBit(4)
+		}
+		if s == "Friday" {
+			bFlag.SetBit(5)
+		}
+		if s == "Saturday" {
+			bFlag.SetBit(6)
+		}
+		if s == "Sun" {
+			bFlag.SetBit(7)
+		}
+		if s == "Public Holiday" {
+			bFlag.SetBit(7)
+		}
+
+	}
+	return bFlag
+}
+
 //type ETagCache[T any] struct {
 //	Value *[]T
 //	ETag  string ""

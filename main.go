@@ -12,7 +12,6 @@ import (
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/cachedResult"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/holiday"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/service"
-	"github.com/xh-dev-go/xhUtils/binaryFlag"
 	"mime"
 	"regexp"
 	"sort"
@@ -201,67 +200,15 @@ func main() {
 			} else if location == DestinationCheungChau {
 				dtos, _, _ = service.GetCentralToCheungChau()
 			}
-			holidays := holiday.IsPublicHoliday(dayString)
-			bFlag := binaryFlag.New()
 
 			todayDate, err := time.Parse(LAYOUT, dayString)
 			if err != nil {
 				panic(err)
 			}
 
-			switch todayDate.Weekday() {
-			case time.Monday:
-				bFlag.SetBit(1)
-			case time.Tuesday:
-				bFlag.SetBit(2)
-			case time.Wednesday:
-				bFlag.SetBit(3)
-			case time.Thursday:
-				bFlag.SetBit(4)
-			case time.Friday:
-				bFlag.SetBit(5)
-			case time.Saturday:
-				bFlag.SetBit(6)
-			case time.Sunday:
-				bFlag.SetBit(7)
-			}
-
-			if len(holidays) > 0 {
-				bFlag.SetBit(10)
-			}
+			bFlag := holiday.TodayHolidayFlag(todayDate)
 
 			var filtered []service.FerryRecordDto
-			converToBFlag := func(sa []string) binaryFlag.BinaryFlag {
-				bFlag := binaryFlag.New()
-				for _, s := range sa {
-					if s == "Monday" {
-						bFlag.SetBit(1)
-					}
-					if s == "Tuesday" {
-						bFlag.SetBit(2)
-					}
-					if s == "Wednesday" {
-						bFlag.SetBit(3)
-					}
-					if s == "Thusday" {
-						bFlag.SetBit(4)
-					}
-					if s == "Friday" {
-						bFlag.SetBit(5)
-					}
-					if s == "Saturday" {
-						bFlag.SetBit(6)
-					}
-					if s == "Sun" {
-						bFlag.SetBit(7)
-					}
-					if s == "Public Holiday" {
-						bFlag.SetBit(7)
-					}
-				}
-
-				return *bFlag
-			}
 
 			for _, dto := range dtos {
 				if direction == directionFrom && dto.From != locationExchange {
@@ -270,7 +217,7 @@ func main() {
 				if direction == directionTo && dto.To != locationExchange {
 					continue
 				}
-				flag := converToBFlag(dto.Frequency)
+				flag := dto.GetFlag()
 				if flag.AnyMatch(*bFlag) {
 					filtered = append(filtered, dto)
 				}

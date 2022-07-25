@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/cachedResult"
+	"github.com/xh-dev-go/xhUtils/binaryFlag"
 	"io"
 	"net/http"
 	"strings"
@@ -40,9 +41,39 @@ type VEvent struct {
 
 var CachedHolidayApi = cachedResult.Cache[[]Holiday]{}
 
+const layout = "20060102"
+
+func TodayHolidayFlag(todayDate time.Time) *binaryFlag.BinaryFlag {
+	dayStr := todayDate.Format(time.Layout)
+	holidays := IsPublicHoliday(dayStr)
+	bFlag := binaryFlag.New()
+
+	switch todayDate.Weekday() {
+	case time.Monday:
+		bFlag.SetBit(1)
+	case time.Tuesday:
+		bFlag.SetBit(2)
+	case time.Wednesday:
+		bFlag.SetBit(3)
+	case time.Thursday:
+		bFlag.SetBit(4)
+	case time.Friday:
+		bFlag.SetBit(5)
+	case time.Saturday:
+		bFlag.SetBit(6)
+	case time.Sunday:
+		bFlag.SetBit(7)
+	}
+
+	if len(holidays) > 0 {
+		bFlag.SetBit(10)
+	}
+
+	return bFlag
+}
+
 func IsPublicHoliday(dateString string) []Holiday {
 	var arr []Holiday
-	layout := "20060102"
 	date, err := time.Parse(layout, dateString)
 	if err != nil {
 		panic(err)
