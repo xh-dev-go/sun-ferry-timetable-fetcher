@@ -1,25 +1,32 @@
 package main
 
 import (
+	"context"
 	"crypto/md5"
 	"embed"
 	_ "embed"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"github.com/eko/gocache/v3/store"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/cachedResult"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/holiday"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/service"
+	"golang.org/x/exp/slices"
 	"mime"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 )
 
 //go:embed static
 var f embed.FS
+
+var CacheManager = cachedResult.CacheC[[]service.FerryRecordDto]()
 
 func extractGet[T any](function func() ([]T, string, int), c *gin.Context) {
 	arr, eTag, status := function()
@@ -155,25 +162,16 @@ func main() {
 	}
 	sunFerryGroup := r.Group("/api/v1/ferry/sun-ferry")
 	{
+		sunFerryGroup.GET("service-map", func(c *gin.Context) {
+			c.JSON(200, service.MapDict)
+		})
 		sunFerryGroup.GET("mui-wo", func(c *gin.Context) {
 			extractGet(service.GetCentralToMuiWo, c)
 		})
-		sunFerryGroup.GET("/:direction/:location/:time", func(c *gin.Context) {
+		sunFerryGroup.GET("/:direction/:from/:to/:time", func(c *gin.Context) {
 			direction := c.Param("direction")
-			if direction != directionFrom && direction != directionTo {
-				panic("direction not match")
-			}
-			location := c.Param("location")
-			if location != DestinationCheungChau && location != DestinationMuiWo {
-				panic("location not match")
-			}
-			var locationExchange string
-			if location == DestinationCheungChau {
-				locationExchange = DestExchangeCheungChau
-			}
-			if location == DestinationMuiWo {
-				locationExchange = DestExchangeMuiWo
-			}
+			from := c.Param("from")
+			to := c.Param("to")
 
 			timeParam := c.Param("time")
 			if timeParam != "today" {
@@ -194,11 +192,64 @@ func main() {
 				dayString = date.Format(LAYOUT)
 			}
 
+			var ctx = context.Background()
+			var cacheKey = fmt.Sprintf("/%s/%s/%s/%s", direction, from, to, dayString)
+
+			MW := "mui-wo"
+			CC := "cheung-chau"
+			IS := "island"
+			KC := "kowloon-city"
+			HH := "hung-hom"
+			var list []string
+			list = append(list, MW)
+			list = append(list, CC)
+			list = append(list, IS)
+			list = append(list, KC)
+			list = append(list, HH)
+
+			if !slices.Contains(list, direction) {
+				panic("direction not match")
+			}
+
+			dict := service.MapDict[direction]
+
+			var allLocation []string
+			for k, _ := range dict {
+				allLocation = append(allLocation, strings.ReplaceAll(strings.ToLower(k), " ", "-"))
+			}
+
+			if !slices.Contains(allLocation, from) || !slices.Contains(allLocation, to) {
+				panic(fmt.Sprintf("From[%s] or To[%s] not match", from, to))
+			}
+
 			var dtos []service.FerryRecordDto
-			if location == DestinationMuiWo {
-				dtos, _, _ = service.GetCentralToMuiWo()
-			} else if location == DestinationCheungChau {
-				dtos, _, _ = service.GetCentralToCheungChau()
+			var tag string
+			if direction == MW {
+				dtos, tag, _ = service.GetCentralToMuiWo()
+			} else if direction == CC {
+				dtos, tag, _ = service.GetCentralToCheungChau()
+			} else if direction == IS {
+				dtos, tag, _ = service.GetInterIsland()
+			} else if direction == KC {
+				dtos, tag, _ = service.GetNorthPointKowloonCity()
+			} else if direction == HH {
+				dtos, tag, _ = service.GetNorthPointHungHom()
+			} else {
+				panic(fmt.Sprintf("No match route found: %s", direction))
+			}
+
+			v, err := CacheManager.Get(ctx, cacheKey)
+
+			etag := c.GetHeader("If-None-Match")
+
+			if err == nil {
+				if etag != "" && etag == tag && etag == v.Key() {
+					c.Status(304)
+					return
+				}
+
+			} else if err.Error() != store.NOT_FOUND_ERR {
+				panic(err)
 			}
 
 			todayDate, err := time.Parse(LAYOUT, dayString)
@@ -211,10 +262,10 @@ func main() {
 			var filtered []service.FerryRecordDto
 
 			for _, dto := range dtos {
-				if direction == directionFrom && dto.From != locationExchange {
+				if strings.ReplaceAll(strings.ToLower(dto.From), " ", "-") != from {
 					continue
 				}
-				if direction == directionTo && dto.To != locationExchange {
+				if strings.ReplaceAll(strings.ToLower(dto.To), " ", "-") != to {
 					continue
 				}
 				flag := dto.GetFlag()
@@ -225,9 +276,13 @@ func main() {
 
 			sort.SliceStable(filtered, func(i, j int) bool {
 				return filtered[i].Time < filtered[j].Time
-
 			})
 
+			var cc cachedResult.Cache[[]service.FerryRecordDto]
+			cc.Update(tag, filtered)
+
+			CacheManager.Set(context.Background(), cacheKey, cc)
+			c.Header("ETag", tag)
 			c.JSON(200, filtered)
 		})
 		sunFerryGroup.GET("cheung-chau", func(c *gin.Context) {

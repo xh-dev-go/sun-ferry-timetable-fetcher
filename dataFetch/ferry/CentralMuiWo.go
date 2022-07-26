@@ -78,7 +78,9 @@ func DecodeIsland(msg, routeName string, dict map[string]string, convert Convert
 			panic(errors.New("fail convert time to number"))
 		}
 		if times[1] == "p.m." {
-			time += 1200
+			if time < 1200 {
+				time += 1200
+			}
 		}
 		record.Time = time
 

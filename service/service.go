@@ -92,6 +92,14 @@ func GetCentralToMuiWo() ([]FerryRecordDto, string, int) {
 	return get(&centralMuiWoCache, muiwoConvert, &centralMuiWoCacheETag)
 }
 
+var MapDict = map[string]map[string]string{
+	"mui-wo":       centralMuiWoCache.dict,
+	"cheung-chau":  centralCheungChauCache.dict,
+	"island":       interIslandFerry.dict,
+	"hung-hom":     hungHomNorthPointFerry.dict,
+	"kowloon-city": northPointKowloonCityFerry.dict,
+}
+
 func convertToDto(
 	arr []dataFetch.FerryRecord,
 	speedValuePair binaryFlag.ValuePair[string],

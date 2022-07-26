@@ -44,7 +44,7 @@ var CachedHolidayApi = cachedResult.Cache[[]Holiday]{}
 const layout = "20060102"
 
 func TodayHolidayFlag(todayDate time.Time) *binaryFlag.BinaryFlag {
-	dayStr := todayDate.Format(time.Layout)
+	dayStr := todayDate.Format(layout)
 	holidays := IsPublicHoliday(dayStr)
 	bFlag := binaryFlag.New()
 
