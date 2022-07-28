@@ -40,7 +40,7 @@ func (ferryDto *FerryRecordDto) GetFlag() *binaryFlag.BinaryFlag {
 		if s == "Wednesday" {
 			bFlag.SetBit(3)
 		}
-		if s == "Thusday" {
+		if s == "Thursday" {
 			bFlag.SetBit(4)
 		}
 		if s == "Friday" {
