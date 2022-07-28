@@ -72,17 +72,7 @@ func DecodeIsland(msg, routeName string, dict map[string]string, convert Convert
 		record.ZhFrom = dict[record.From]
 		record.ZhTo = dict[record.To]
 
-		times := strings.Split(strings.TrimSpace(line[2]), " ")
-		time, err := strconv.Atoi(strings.ReplaceAll(times[0], ":", ""))
-		if err != nil {
-			panic(errors.New("fail convert time to number"))
-		}
-		if times[1] == "p.m." {
-			if time < 1200 {
-				time += 1200
-			}
-		}
-		record.Time = time
+		record.Time = TimeConvert(line[2])
 
 		remark := line[3]
 		serviceDate := line[1]
@@ -95,6 +85,28 @@ func DecodeIsland(msg, routeName string, dict map[string]string, convert Convert
 
 	}
 	return &records
+}
+
+func TimeConvert(timeStr string) int {
+	times := strings.Split(strings.TrimSpace(timeStr), " ")
+	time, err := strconv.Atoi(strings.ReplaceAll(times[0], ":", ""))
+	if err != nil {
+		panic(errors.New("fail convert time to number"))
+	}
+	if times[1] == "noon" {
+		time = 1200
+	}
+	if times[1] == "p.m." {
+		if time < 1200 {
+			time += 1200
+		}
+	} else if times[1] == "a.m." {
+		if time >= 1200 {
+			time -= 1200
+		}
+	}
+
+	return time
 }
 func Decode(msg, routeName string, dict map[string]string, convert Convert) *[]dataFetch.FerryRecord {
 	var records []dataFetch.FerryRecord
@@ -113,15 +125,7 @@ func Decode(msg, routeName string, dict map[string]string, convert Convert) *[]d
 		record.To = strings.TrimSpace(locationArr[1])
 		record.ZhTo = dict[record.To]
 
-		times := strings.Split(strings.TrimSpace(line[2]), " ")
-		time, err := strconv.Atoi(strings.ReplaceAll(times[0], ":", ""))
-		if err != nil {
-			panic(errors.New("fail convert time to number"))
-		}
-		if times[1] == "p.m." {
-			time += 1200
-		}
-		record.Time = time
+		record.Time = TimeConvert(line[2])
 
 		remark := line[3]
 		serviceDate := line[1]
