@@ -16,7 +16,9 @@ import (
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/dataFetch/holiday"
 	"github.com/xh-dev-go/sun-ferry-timetable-fetcher/service"
 	"golang.org/x/exp/slices"
+	"io/fs"
 	"mime"
+	"net/http"
 	"regexp"
 	"sort"
 	"strings"
@@ -25,6 +27,40 @@ import (
 
 //go:embed static
 var f embed.FS
+
+//-----------------------
+type embedFileSystem struct {
+	http.FileSystem
+	indexes bool
+}
+
+func (e embedFileSystem) Exists(prefix string, path string) bool {
+	f, err := e.Open(path)
+	if err != nil {
+		return false
+	}
+
+	// check if indexing is allowed
+	s, _ := f.Stat()
+	if s.IsDir() && !e.indexes {
+		return false
+	}
+
+	return true
+}
+
+func EmbedFolder(fsEmbed embed.FS, targetPath string, index bool) static.ServeFileSystem {
+	subFS, err := fs.Sub(fsEmbed, targetPath)
+	if err != nil {
+		panic(err)
+	}
+	return embedFileSystem{
+		FileSystem: http.FS(subFS),
+		indexes:    index,
+	}
+}
+
+//-----------------------
 
 var CacheManager = cachedResult.CacheC[[]service.FerryRecordDto]()
 
@@ -50,19 +86,6 @@ var todayETag = cachedResult.Cache[IsPublicHolidayDto]{}
 
 const LAYOUT = "20060102"
 
-const (
-	DestinationCheungChau string = "cheung-chau"
-	DestinationMuiWo             = "mui-wo"
-)
-const (
-	DestExchangeCheungChau string = "Cheung Chau"
-	DestExchangeMuiWo             = "Mui Wo"
-)
-const (
-	directionFrom string = "from"
-	directionTo          = "to"
-)
-
 func main() {
 	err := mime.AddExtensionType(".js", "application/javascript")
 	if err != nil {
@@ -73,7 +96,9 @@ func main() {
 	r.Use(cors.New(cors.Config{
 		AllowAllOrigins: true,
 	}))
-	r.Use(static.Serve("/", static.LocalFile("./static", true)))
+	wwwroot := EmbedFolder(f, "static", true)
+	staticServer := static.Serve("/", wwwroot)
+	r.Use(staticServer)
 	calendarGroup := r.Group("/api/v1/calendar/public-holiday")
 	{
 		var setResponse = func(status bool, todayString string, context *gin.Context) {
@@ -298,6 +323,5 @@ func main() {
 			extractGet(service.GetNorthPointKowloonCity, c)
 		})
 	}
-	r.StaticFile("/", "./static")
 	r.Run()
 }
