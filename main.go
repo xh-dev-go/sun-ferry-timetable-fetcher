@@ -99,6 +99,9 @@ func main() {
 	wwwroot := EmbedFolder(f, "static", true)
 	staticServer := static.Serve("/", wwwroot)
 	r.Use(staticServer)
+	r.NoRoute(func(c *gin.Context) {
+		c.FileFromFS("index.html", wwwroot)
+	})
 	calendarGroup := r.Group("/api/v1/calendar/public-holiday")
 	{
 		var setResponse = func(status bool, todayString string, context *gin.Context) {
