@@ -2,6 +2,7 @@ def project_version
 def project_branchName
 
 def project_docker_name='sun-ferry-timetable-fetcher'
+
 def setStatus(status){
     def m = '{"state": "'+status+'","context": "continuous-integration/jenkins", "description": "Jenkins", "target_url": "https://jks.xh-network.xyz/job/webclip2-server/'+env.BUILD_NUMBER+'/console"}'
     m = m.replaceAll("\"", "\\\\\"")
@@ -40,7 +41,7 @@ pipeline {
                 branchName= sh (returnStdout: true, script: 'echo $GIT_BRANCH').trim()
                 commitId= sh (returnStdout: true, script: 'echo $GIT_COMMIT').trim()
                 projectName= sh(returnStdout: true, script: "echo $project_docker_name").trim()
-                uiBranchId= sh(returnStdout: true, script: "pushd web && echo $(git log --pretty=format:'%h' -n 1) && popd").trim()
+                uiBranchId= sh(returnStdout: true, script: 'pushd web && echo $(git log --pretty=format:''%h'' -n 1) && popd').trim()
             }
             when { expression { return env.GIT_BRANCH == 'origin/master'}}
             steps {
