@@ -55,7 +55,7 @@ pipeline {
             steps {
                 sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
                 sh 'docker tag $projectName:latest $DOCKERHUB_CREDENTIALS_USR/$projectName:latest'
-                sh 'docker push DOCKERHUB_CREDENTIALS_USR/$projectName:latest'
+                sh 'docker push $DOCKERHUB_CREDENTIALS_USR/$projectName:latest'
                 sh 'docker tag $DOCKERHUB_CREDENTIALS_USR/$projectName:latest $DOCKERHUB_CREDENTIALS_USR/$projectName:'+project_version
                 sh 'docker push $DOCKERHUB_CREDENTIALS_USR/$projectName:'+project_version
             }
