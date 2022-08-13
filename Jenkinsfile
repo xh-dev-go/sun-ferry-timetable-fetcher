@@ -40,9 +40,11 @@ pipeline {
                 branchName= sh (returnStdout: true, script: 'echo $GIT_BRANCH').trim()
                 commitId= sh (returnStdout: true, script: 'echo $GIT_COMMIT').trim()
                 projectName= sh(returnStdout: true, script: "echo $project_docker_name").trim()
+                uiBranchId= sh(returnStdout: true, script: "pushd web && echo $(git log --pretty=format:'%h' -n 1) && popd").trim()
             }
             when { expression { return env.GIT_BRANCH == 'origin/master'}}
             steps {
+                sh 'printenv'
                 sh 'docker build --build-arg branchName=$GIT_BRANCH --build-arg commitId=$GIT_COMMIT -t $projectName:latest .'
                 echo 'build complete'
             }
