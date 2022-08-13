@@ -5,6 +5,7 @@ ARG branchName="DEFAULT_BRANCH_NAME"
 ARG commitId="DEFAULT_COMMIT_ID"
 ENV branchName=${branchName}
 ENV commitId=${commitId}
+RUN ls -al
 RUN sed -i "s|UnknownBranchName|${branchName}|g" ./src/environments/environment.prod.ts
 RUN sed -i "s|UnknownCommitId|${commitId}|g" ./src/environments/environment.prod.ts
 RUN rm -fr /app/dist/*
