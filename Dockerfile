@@ -12,10 +12,16 @@ RUN npm install
 RUN npm run build-prod
 
 FROM golang:1.18.4-alpine as go-build
+ARG branchName="DEFAULT_BRANCH_NAME"
+ARG commitId="DEFAULT_COMMIT_ID"
+ENV branchName=${branchName}
+ENV commitId=${commitId}
 WORKDIR /usr/src/app
 COPY . /usr/src/app
 RUN rm -fr static
 COPY --from=node-build /app/dist/web /usr/src/app/static
+RUN echo "$(cat version.txt)-${commitId}" > version.txt
+RUN cat version.txt
 RUN go build -o app
 
 FROM alpine:3.16

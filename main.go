@@ -28,6 +28,9 @@ import (
 //go:embed static
 var f embed.FS
 
+//go:embed version.txt
+var version string
+
 //-----------------------
 type embedFileSystem struct {
 	http.FileSystem
@@ -82,6 +85,10 @@ type IsPublicHolidayDto struct {
 	Summary         string `json:"summary"`
 }
 
+type VersionResponse struct {
+	Version string `json:"version"`
+}
+
 var todayETag = cachedResult.Cache[IsPublicHolidayDto]{}
 
 const LAYOUT = "20060102"
@@ -101,6 +108,9 @@ func main() {
 	r.Use(staticServer)
 	r.NoRoute(func(c *gin.Context) {
 		c.FileFromFS("index.html", wwwroot)
+	})
+	r.GET("/api/v1/version", func(c *gin.Context) {
+		c.JSON(200, VersionResponse{Version: version})
 	})
 	calendarGroup := r.Group("/api/v1/calendar/public-holiday")
 	{
