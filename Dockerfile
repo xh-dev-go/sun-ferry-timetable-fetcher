@@ -2,12 +2,12 @@ FROM node:16.14.2 as node-build
 COPY web /app/
 WORKDIR /app
 ARG branchName="DEFAULT_BRANCH_NAME"
-ARG commitId="DEFAULT_COMMIT_ID"
+ARG uiCommitId="DEFAULT_COMMIT_ID"
 ENV branchName=${branchName}
-ENV commitId=${commitId}
+ENV uiCommitId=${uiCommitId}
 RUN ls -al
 RUN sed -i "s|UnknownBranchName|${branchName}|g" ./src/environments/environment.prod.ts
-RUN sed -i "s|UnknownCommitId|${commitId}|g" ./src/environments/environment.prod.ts
+RUN sed -i "s|UnknownCommitId|${uiCommitId}|g" ./src/environments/environment.prod.ts
 RUN rm -fr /app/dist/*
 RUN npm install
 RUN npm run build-prod
