@@ -21,7 +21,7 @@ WORKDIR /usr/src/app
 COPY . /usr/src/app
 RUN rm -fr static
 COPY --from=node-build /app/dist/web /usr/src/app/static
-RUN echo "$(cat version.txt)-${commitId}" > version.txt
+RUN echo -n "$(cat version.txt)-$(echo ${commitId} | cut -c -6)" > version.txt
 RUN cat version.txt
 RUN go build -o app
 
