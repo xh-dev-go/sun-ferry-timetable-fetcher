@@ -39,11 +39,11 @@ pipeline {
             environment {
                 branchName= sh (returnStdout: true, script: 'echo $GIT_BRANCH').trim()
                 commitId= sh (returnStdout: true, script: 'echo $GIT_COMMIT').trim()
-                projectName= sh(returnStdout: true, script: "echo $project_docker_name")
+                projectName= sh(returnStdout: true, script: "echo $project_docker_name").trim()
             }
             when { expression { return env.GIT_BRANCH == 'origin/master'}}
             steps {
-                sh 'docker build --build-arg branchName=$GIT_BRANCH --build-arg commitId=$GIT_COMMIT -t xethhung/$projectName:latest .'
+                sh 'docker build --build-arg branchName=$GIT_BRANCH --build-arg commitId=$GIT_COMMIT -t $DEPLOY_CREDENTIALS_USR/$projectName:latest .'
                 echo 'build complete'
             }
         }
