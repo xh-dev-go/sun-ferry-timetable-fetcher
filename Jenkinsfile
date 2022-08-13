@@ -47,15 +47,18 @@ pipeline {
                 echo 'build complete'
             }
         }
-//         stage('Publish') {
-//             when { expression { return env.GIT_BRANCH == 'origin/master'}}
-//             steps {
-//                 sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-//                 sh 'docker push $DOCKERHUB_CREDENTIALS_USR/$projectName:latest'
-//                 sh 'docker tag $DOCKERHUB_CREDENTIALS_USR/$projectName:latest xethhung/webclip2-server:'+project_version
-//                 sh 'docker push $DOCKERHUB_CREDENTIALS_USR/$projectName:'+project_version
-//             }
-//         }
+        stage('Publish') {
+            environment {
+                projectName= sh(returnStdout: true, script: "echo $project_docker_name").trim()
+            }
+            when { expression { return env.GIT_BRANCH == 'origin/master'}}
+            steps {
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                sh 'docker push $DOCKERHUB_CREDENTIALS_USR/$projectName:latest'
+                sh 'docker tag $DOCKERHUB_CREDENTIALS_USR/$projectName:latest $DOCKERHUB_CREDENTIALS_USR/$projectName:'+project_version
+                sh 'docker push $DOCKERHUB_CREDENTIALS_USR/$projectName:'+project_version
+            }
+        }
 //         stage('Deploy') {
 //             when { expression { return env.GIT_BRANCH == 'origin/master'}}
 //             steps {
