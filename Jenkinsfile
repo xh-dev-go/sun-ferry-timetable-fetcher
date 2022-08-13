@@ -39,7 +39,7 @@ pipeline {
             environment {
                 branchName= sh (returnStdout: true, script: 'echo $GIT_BRANCH').trim()
                 commitId= sh (returnStdout: true, script: 'echo $GIT_COMMIT').trim()
-                projectName= sh(returnStdout: true, script: "echo $projectName")
+                projectName= sh(returnStdout: true, script: "echo $project_docker_name")
             }
             when { expression { return env.GIT_BRANCH == 'origin/master'}}
             steps {
