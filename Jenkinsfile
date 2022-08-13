@@ -46,7 +46,7 @@ pipeline {
             when { expression { return env.GIT_BRANCH == 'origin/master'}}
             steps {
                 sh 'printenv'
-                sh 'docker build --build-arg branchName=$GIT_BRANCH --build-arg commitId=$GIT_COMMIT -t $projectName:latest .'
+                sh 'docker build --build-arg branchName=$GIT_BRANCH --build-arg commitId=$uiBranchId -t $projectName:latest .'
                 echo 'build complete'
             }
         }
